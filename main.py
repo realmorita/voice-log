@@ -197,7 +197,10 @@ def _process_transcription(wav_path: Path, config: Config, stem: str) -> None:
         formats=config.output.formats_transcript,
         segments=result.segments,
     )
-    ui.show_success(f"文字起こし保存: {list(paths.values())[0]}")
+    if paths:
+        ui.show_success(f"文字起こし保存: {list(paths.values())[0]}")
+    else:
+        ui.show_warning("文字起こしファイルは保存されませんでした (セグメント無しか設定の問題)")
 
     # 要約（LLM有効時）
     if config.llm.enabled:

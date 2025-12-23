@@ -201,7 +201,7 @@ def convert_to_wav(
     """
     if output_path is None:
         tmp_dir = tempfile.mkdtemp()
-        output_path = Path(tmp_dir) / f"{input_path.stem}_converted.wav"
+        output_path = Path(tmp_dir) / "converted.wav"
 
     # 既にWAVで正しいフォーマットなら変換不要
     if input_path.suffix.lower() == ".wav":
