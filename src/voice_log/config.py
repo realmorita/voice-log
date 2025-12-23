@@ -81,7 +81,7 @@ class LlmConfig:
     base_url: str = "http://127.0.0.1:11434/v1"
     model: str = "qwen2.5:14b"
     temperature: float = 0.2
-    max_output_tokens: int = 1024
+    max_output_tokens: int | None = None
     timeout_sec: int = 120
     prompt_mode: str = "minutes"
 

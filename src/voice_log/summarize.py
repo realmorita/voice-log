@@ -251,18 +251,20 @@ class SummaryEngine:
         logger.info(f"要約生成中: モデル={self.config.model}, モード={mode}")
 
         try:
-            completion = self._client.chat.completions.create(
-                model=self.config.model,
-                messages=[
+            # チャット補完のパラメータを準備
+            completion_kwargs = {
+                "model": self.config.model,
+                "messages": [
                     {
                         "role": "system",
                         "content": "あなたは文字起こしを要約するアシスタントです。",
                     },
                     {"role": "user", "content": prompt},
                 ],
-                temperature=self.config.temperature,
-                max_tokens=self.config.max_output_tokens,
-            )
+                "temperature": self.config.temperature,
+            }
+
+            completion = self._client.chat.completions.create(**completion_kwargs)
 
             summary_text = completion.choices[0].message.content or ""
             tokens_used = getattr(completion.usage, "total_tokens", 0)

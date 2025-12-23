@@ -48,9 +48,8 @@ llm:
   base_url: "http://127.0.0.1:11434/v1"
   model: "qwen2.5:14b"
   temperature: 0.2
-  max_output_tokens: 1024
-  timeout_sec: 120
   prompt_mode: "minutes"
+  timeout_sec: 600
 
 output:
   out_dir: "outputs"
