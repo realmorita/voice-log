@@ -18,3 +18,6 @@ logs/
 
 # config
 config.yaml
+
+# outputs
+outputs/
