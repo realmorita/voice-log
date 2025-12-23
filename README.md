@@ -181,7 +181,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@realmorita](https://github.com/realmorita)
+Morita - [@realmorita](https://github.com/realmorita)
 
 Project Link: [https://github.com/realmorita/voice-log](https://github.com/realmorita/voice-log)
 
