@@ -15,6 +15,7 @@ dependencies = [
     "faster-whisper>=1.2.1",
     "llvmlite>=0.46.0",
     "numba>=0.63.0",
+    "nvidia-cudnn-cu13>=9.13.0.50",
     "openai>=2.14.0",
     "pyyaml>=6.0.3",
     "rich>=14.2.0",
@@ -22,6 +23,7 @@ dependencies = [
     "soundfile>=0.13.1",
     "stable-ts[fw]>=2.19.1",
     "torch>=2.9.1",
+    "torchaudio>=2.9.1",
 ]
 
 [project.optional-dependencies]
@@ -37,6 +39,7 @@ explicit = true
 
 [tool.uv.sources]
 torch = { index = "pytorch-cu130" }
+torchaudio = { index = "pytorch-cu130" }
 torchcodec = { index = "pytorch-cu130" }
 
 [tool.ruff]
