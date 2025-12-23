@@ -15,6 +15,7 @@ import pytest
 
 from voice_log.prompts import (
     PromptManager,
+    PromptModeInfo,
     list_prompt_modes,
     load_prompt,
     render_prompt,
@@ -36,9 +37,29 @@ class TestListPromptModes:
 
             modes = list_prompt_modes(prompts_dir)
 
-            assert "minutes" in modes
-            assert "todo" in modes
-            assert "summary_3lines" in modes
+            mode_ids = [mode.mode_id for mode in modes]
+            assert "minutes" in mode_ids
+            assert "todo" in mode_ids
+            assert "summary_3lines" in mode_ids
+
+    def test_uses_mode_name_from_front_matter(self):
+        """フロントマターのモード名を表示名に使う"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            prompts_dir = Path(tmpdir) / "prompts"
+            prompts_dir.mkdir()
+
+            content = """---
+mode_name: 議事録まとめ
+---
+# 議事録
+"""
+            (prompts_dir / "minutes.md").write_text(content, encoding="utf-8")
+
+            modes = list_prompt_modes(prompts_dir)
+
+            assert modes == [
+                PromptModeInfo(mode_id="minutes", display_name="議事録まとめ")
+            ]
 
     def test_returns_empty_for_missing_dir(self):
         """存在しないディレクトリでは空を返す"""
@@ -67,6 +88,26 @@ class TestLoadPrompt:
 
             assert "議事録要約プロンプト" in result
             assert "{{TRANSCRIPT}}" in result
+
+    def test_loads_prompt_file_without_front_matter(self):
+        """フロントマターを本文に含めない"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            prompts_dir = Path(tmpdir) / "prompts"
+            prompts_dir.mkdir()
+
+            content = """---
+mode_name: 議事録まとめ
+---
+# 議事録要約プロンプト
+
+{{TRANSCRIPT}}
+"""
+            (prompts_dir / "minutes.md").write_text(content, encoding="utf-8")
+
+            result = load_prompt(prompts_dir, "minutes")
+
+            assert "mode_name" not in result
+            assert "議事録要約プロンプト" in result
 
     def test_raises_for_missing_mode(self):
         """存在しないモードでエラーを返す"""
@@ -134,7 +175,9 @@ class TestPromptManager:
 
             manager = PromptManager(prompts_dir)
 
-            assert "minutes" in manager.list_modes()
+            assert manager.list_modes() == [
+                PromptModeInfo(mode_id="minutes", display_name="minutes")
+            ]
 
             rendered = manager.render("minutes", transcript="テスト内容")
             assert rendered == "要約: テスト内容"

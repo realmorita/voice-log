@@ -11,6 +11,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Prompt
 from rich.table import Table
 
+from voice_log.prompts import PromptModeInfo
 from voice_log import __version__
 from voice_log.diagnostics import DiagnosticsResult
 
@@ -103,7 +104,7 @@ def show_menu() -> str:
   [cyan][3][/cyan] テキストから要約のみ
 
   [cyan][4][/cyan] 録音デバイス一覧
-  [cyan][5][/cyan] 要約モード一覧
+  [cyan][5][/cyan] 要約モード選択
   [cyan][6][/cyan] 要約モデル選択
 
   [cyan][7][/cyan] 設定初期化
@@ -143,11 +144,11 @@ def show_devices(devices: list[dict]) -> None:
     console.print()
 
 
-def show_prompt_modes(modes: list[str]) -> None:
+def show_prompt_modes(modes: list[PromptModeInfo]) -> None:
     """要約モード一覧を表示する
 
     Args:
-        modes: モード名のリスト
+        modes: モード情報のリスト
     """
     if not modes:
         console.print("[yellow]要約モードが見つかりません[/yellow]")
@@ -162,10 +163,57 @@ def show_prompt_modes(modes: list[str]) -> None:
     table.add_column("ファイル")
 
     for i, mode in enumerate(modes, 1):
-        table.add_row(str(i), mode, f"prompts/{mode}.md")
+        table.add_row(str(i), mode.display_name, f"prompts/{mode.mode_id}.md")
 
     console.print(table)
     console.print()
+
+
+def ask_summary_mode(
+    modes: list[PromptModeInfo],
+    current_mode: str,
+) -> str | None:
+    """要約モードの選択を取得する
+
+    Args:
+        modes: モード情報のリスト
+        current_mode: 現在のモード名
+
+    Returns:
+        str | None: 選択されたモード名。キャンセル時はNone。
+    """
+    if not modes:
+        console.print("[yellow]要約モードが見つかりません[/yellow]")
+        console.print(
+            "[dim]prompts/ ディレクトリに .md ファイルを作成してください[/dim]"
+        )
+        return None
+
+    table = Table(title="要約モード選択", show_header=True)
+    table.add_column("#", style="dim")
+    table.add_column("モード名", style="cyan")
+    table.add_column("ファイル")
+    table.add_column("現在", justify="center")
+
+    for i, mode in enumerate(modes, 1):
+        mark = "✓" if mode.mode_id == current_mode else ""
+        table.add_row(str(i), mode.display_name, f"prompts/{mode.mode_id}.md", mark)
+
+    console.print(table)
+    current_display_name = current_mode
+    for mode in modes:
+        if mode.mode_id == current_mode:
+            current_display_name = mode.display_name
+            break
+    console.print(f"[dim]現在のモード: {current_display_name}[/dim]")
+    console.print("[dim]番号を入力してください。0でキャンセル。[/dim]")
+
+    choices = [str(i) for i in range(0, len(modes) + 1)]
+    selected = Prompt.ask("選択", default="0", choices=choices)
+    if selected == "0":
+        return None
+
+    return modes[int(selected) - 1].mode_id
 
 
 def ask_summary_model(models: list[str], current_model: str) -> str | None:

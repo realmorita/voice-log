@@ -245,11 +245,23 @@ def handle_list_devices() -> None:
     ui.show_devices(devices)
 
 
-def handle_list_prompt_modes() -> None:
-    """[5] 要約モード一覧"""
+def handle_list_prompt_modes(config: Config) -> None:
+    """[5] 要約モード選択"""
     manager = PromptManager(DEFAULT_PROMPTS_DIR)
     modes = manager.list_modes()
-    ui.show_prompt_modes(modes)
+
+    selected_mode = ui.ask_summary_mode(modes, config.llm.prompt_mode)
+    if selected_mode is None:
+        ui.show_info("キャンセルしました")
+        return
+
+    if selected_mode == config.llm.prompt_mode:
+        ui.show_info("モードは変更されていません")
+        return
+
+    config.llm.prompt_mode = selected_mode
+    save_config(config, DEFAULT_CONFIG_PATH)
+    ui.show_success(f"要約モードを更新しました: {selected_mode}")
 
 
 def handle_select_summary_model(config: Config) -> None:
@@ -354,7 +366,7 @@ def main() -> None:
             elif choice == "4":
                 handle_list_devices()
             elif choice == "5":
-                handle_list_prompt_modes()
+                handle_list_prompt_modes(config)
             elif choice == "6":
                 handle_select_summary_model(config)
             elif choice == "7":
