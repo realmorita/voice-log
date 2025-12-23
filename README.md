@@ -96,9 +96,9 @@ To get a local copy up and running follow these simple steps.
 *   **GPU**: NVIDIA GPU (CUDA 12.x recommended) for faster processing. CPU is supported but slower.
 *   **Ollama**: Required for summarization features.
     *   Install from [ollama.com](https://ollama.com/)
-    *   Pull a model (e.g., `qwen2.5:14b`):
+    *   Pull a model (e.g., `gpt-oss:20b`):
         ```sh
-        ollama pull qwen2.5:14b
+        ollama pull gpt-oss:20b
         ```
 
 ### Installation
