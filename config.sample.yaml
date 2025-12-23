@@ -60,7 +60,6 @@ output:
     - md
     - txt
   naming: "{date}_{time}_{stem}"
-  meta_footer: true
 
 logging:
   level: "INFO"

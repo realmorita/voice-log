@@ -94,7 +94,6 @@ class OutputConfig:
     formats_transcript: list[str] = field(default_factory=lambda: ["md", "txt"])
     formats_summary: list[str] = field(default_factory=lambda: ["md", "txt"])
     naming: str = "{date}_{time}_{stem}"
-    meta_footer: bool = True
 
 
 @dataclass
@@ -274,7 +273,6 @@ def _serialize_config(config: Config) -> dict:
             "formats_transcript": config.output.formats_transcript,
             "formats_summary": config.output.formats_summary,
             "naming": config.output.naming,
-            "meta_footer": config.output.meta_footer,
         },
         "logging": {
             "level": config.logging.level,

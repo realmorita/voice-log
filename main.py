@@ -42,6 +42,7 @@ def _preload_cudnn_libraries() -> None:
 
 _preload_cudnn_libraries()
 import tempfile
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -54,7 +55,7 @@ from voice_log.audio_io import (
 )
 from voice_log.config import Config, load_config, save_config, save_default_config
 from voice_log.diagnostics import run_diagnostics
-from voice_log.logger import setup_logging, get_logger
+from voice_log.logger import setup_logging, get_logger, log_to_file_only
 from voice_log.output import OutputManager
 from voice_log.prompts import PromptManager
 from voice_log.summarize import (
@@ -177,7 +178,6 @@ def _process_transcription(wav_path: Path, config: Config, stem: str) -> None:
     output_manager = OutputManager(
         out_dir=Path(config.output.out_dir),
         naming=config.output.naming,
-        meta_footer=config.output.meta_footer,
     )
 
     meta = {
@@ -189,12 +189,12 @@ def _process_transcription(wav_path: Path, config: Config, stem: str) -> None:
         "vad_enabled": config.vad.enabled,
         "hallucination_trimmed": result.hallucination_issues,
     }
+    log_to_file_only(logger, logging.INFO, "文字起こしメタ情報: %s", meta)
 
     paths = output_manager.save_transcript(
         result.text,
         stem=stem,
         formats=config.output.formats_transcript,
-        meta=meta,
         segments=result.segments,
     )
     ui.show_success(f"文字起こし保存: {list(paths.values())[0]}")
@@ -216,11 +216,16 @@ def _process_transcription(wav_path: Path, config: Config, stem: str) -> None:
             )
 
             if summary_result.success:
+                log_to_file_only(
+                    logger,
+                    logging.INFO,
+                    "要約メタ情報: %s",
+                    {"llm_model": summary_result.model},
+                )
                 summary_paths = output_manager.save_summary(
                     summary_result.text,
                     stem=stem,
                     formats=config.output.formats_summary,
-                    meta={"llm_model": summary_result.model},
                 )
                 ui.show_success(f"要約保存: {list(summary_paths.values())[0]}")
             else:
