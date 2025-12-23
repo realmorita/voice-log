@@ -12,3 +12,6 @@ wheels/
 # cache
 .pytest_cache
 .ruff_cache
+
+# logs
+logs/
