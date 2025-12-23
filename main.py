@@ -1,6 +1,46 @@
 """Voice Log - ローカル音声文字起こし＋LLM要約ツール"""
 
+import os
 import sys
+
+# cuDNN ライブラリをプリロード（ctranslate2/faster-whisper用）
+# nvidia-cudnn-cu* パッケージのライブラリを事前にロードしておく
+def _preload_cudnn_libraries() -> None:
+    """cuDNN ライブラリを ctypes で事前にロード"""
+    try:
+        import ctypes
+        import nvidia.cudnn
+        # nvidia.cudnn は namespace パッケージなので __path__ を使用
+        cudnn_base_path = nvidia.cudnn.__path__[0] if nvidia.cudnn.__path__ else None
+        if cudnn_base_path is None:
+            return
+        cudnn_lib_path = os.path.join(cudnn_base_path, "lib")
+        if os.path.isdir(cudnn_lib_path):
+            # LD_LIBRARY_PATH も設定（子プロセス用）
+            ld_library_path = os.environ.get("LD_LIBRARY_PATH", "")
+            if cudnn_lib_path not in ld_library_path:
+                os.environ["LD_LIBRARY_PATH"] = f"{cudnn_lib_path}:{ld_library_path}"
+
+            # 主要な cuDNN ライブラリをプリロード
+            cudnn_libs = [
+                "libcudnn.so.9",
+                "libcudnn_ops.so.9",
+                "libcudnn_cnn.so.9",
+                "libcudnn_adv.so.9",
+                "libcudnn_graph.so.9",
+                "libcudnn_heuristic.so.9",
+            ]
+            for lib_name in cudnn_libs:
+                lib_path = os.path.join(cudnn_lib_path, lib_name)
+                if os.path.exists(lib_path):
+                    try:
+                        ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
+                    except OSError:
+                        pass  # ロード失敗は無視
+    except ImportError:
+        pass  # nvidia-cudnn がインストールされていない場合は何もしない
+
+_preload_cudnn_libraries()
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -155,6 +195,7 @@ def _process_transcription(wav_path: Path, config: Config, stem: str) -> None:
         stem=stem,
         formats=config.output.formats_transcript,
         meta=meta,
+        segments=result.segments,
     )
     ui.show_success(f"文字起こし保存: {list(paths.values())[0]}")
 

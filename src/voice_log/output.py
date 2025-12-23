@@ -5,7 +5,48 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from voice_log.transcribe import TranscriptionSegment
+
+
+def format_srt_timestamp(seconds: float) -> str:
+    """秒数をSRT形式のタイムスタンプに変換する
+
+    Args:
+        seconds: 秒数
+
+    Returns:
+        str: SRT形式のタイムスタンプ (HH:MM:SS,mmm)
+    """
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    millis = int((seconds % 1) * 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
+
+
+def segments_to_srt(segments: list["TranscriptionSegment"]) -> str:
+    """セグメントリストをSRT形式のテキストに変換する
+
+    Args:
+        segments: 文字起こしセグメントのリスト
+
+    Returns:
+        str: SRT形式のテキスト
+    """
+    srt_lines = []
+    for i, seg in enumerate(segments, start=1):
+        start_ts = format_srt_timestamp(seg.start)
+        end_ts = format_srt_timestamp(seg.end)
+
+        srt_lines.append(str(i))
+        srt_lines.append(f"{start_ts} --> {end_ts}")
+        srt_lines.append(seg.text)
+        srt_lines.append("")  # 空行（セグメント間の区切り）
+
+    return "\n".join(srt_lines)
 
 
 def generate_filename(
@@ -114,6 +155,7 @@ class OutputManager:
         stem: str,
         formats: list[str] | None = None,
         meta: dict[str, Any] | None = None,
+        segments: list["TranscriptionSegment"] | None = None,
     ) -> dict[str, Path]:
         """文字起こしを保存する
 
@@ -122,6 +164,7 @@ class OutputManager:
             stem: 元ファイル名
             formats: 出力フォーマット（デフォルト: ["md", "txt"]）
             meta: メタ情報（フッター用）
+            segments: 文字起こしセグメント（SRT出力用、オプション）
 
         Returns:
             dict[str, Path]: フォーマットごとの出力パス
@@ -136,10 +179,18 @@ class OutputManager:
 
         for fmt in formats:
             file_path = self.out_dir / f"{base_name}_transcript.{fmt}"
-            content = transcript
 
-            if self.meta_footer and meta and fmt == "md":
-                content += generate_meta_footer(**meta)
+            if fmt == "srt":
+                # SRT形式はセグメントから生成
+                if segments:
+                    content = segments_to_srt(segments)
+                else:
+                    # セグメントがない場合はスキップ
+                    continue
+            else:
+                content = transcript
+                if self.meta_footer and meta and fmt == "md":
+                    content += generate_meta_footer(**meta)
 
             file_path.write_text(content, encoding="utf-8")
             paths[fmt] = file_path
