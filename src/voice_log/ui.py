@@ -104,9 +104,10 @@ def show_menu() -> str:
 
   [cyan][4][/cyan] 録音デバイス一覧
   [cyan][5][/cyan] 要約モード一覧
+  [cyan][6][/cyan] 要約モデル選択
 
-  [cyan][6][/cyan] 設定初期化
-  [cyan][7][/cyan] 設定再読み込み
+  [cyan][7][/cyan] 設定初期化
+  [cyan][8][/cyan] 設定再読み込み
 
   [cyan][0][/cyan] 終了
 """
@@ -165,6 +166,41 @@ def show_prompt_modes(modes: list[str]) -> None:
 
     console.print(table)
     console.print()
+
+
+def ask_summary_model(models: list[str], current_model: str) -> str | None:
+    """要約モデルの選択を取得する
+
+    Args:
+        models: モデル名のリスト
+        current_model: 現在のモデル名
+
+    Returns:
+        str | None: 選択されたモデル名。キャンセル時はNone。
+    """
+    if not models:
+        console.print("[yellow]利用可能なモデルがありません[/yellow]")
+        return None
+
+    table = Table(title="要約モデル選択", show_header=True)
+    table.add_column("#", style="dim")
+    table.add_column("モデル名", style="cyan")
+    table.add_column("現在", justify="center")
+
+    for i, model in enumerate(models, 1):
+        mark = "✓" if model == current_model else ""
+        table.add_row(str(i), model, mark)
+
+    console.print(table)
+    console.print(f"[dim]現在のモデル: {current_model}[/dim]")
+    console.print("[dim]番号を入力してください。0でキャンセル。[/dim]")
+
+    choices = [str(i) for i in range(0, len(models) + 1)]
+    selected = Prompt.ask("選択", default="0", choices=choices)
+    if selected == "0":
+        return None
+
+    return models[int(selected) - 1]
 
 
 def show_progress(message: str):

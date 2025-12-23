@@ -7,6 +7,7 @@
 # - [x] 境界値: 存在しないファイルでデフォルト設定を返す
 # - [x] 異常系: 不正なYAMLでエラーを返す
 # - [x] 正常系: 設定の特定キーにアクセスできる
+# - [x] 正常系: 設定をファイルに保存できる
 """
 
 import tempfile
@@ -15,7 +16,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from voice_log.config import Config, load_config, save_default_config
+from voice_log.config import Config, load_config, save_config, save_default_config
 
 
 class TestConfig:
@@ -104,3 +105,21 @@ class TestSaveDefaultConfig:
 
             assert data["audio"]["sample_rate"] == 16000
             assert data["whisper"]["model"] == "large-v3"
+
+
+class TestSaveConfig:
+    """save_config のテスト"""
+
+    def test_saves_config_file(self):
+        """設定をファイルに保存できる"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config = Config()
+            config.llm.model = "test-model"
+
+            save_config(config, config_path)
+
+            with open(config_path) as f:
+                data = yaml.safe_load(f)
+
+            assert data["llm"]["model"] == "test-model"

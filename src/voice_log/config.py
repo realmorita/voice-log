@@ -194,8 +194,33 @@ def save_default_config(config_path: Path) -> None:
         config_path: 保存先パス
     """
     config = Config()
+    data = _serialize_config(config)
 
-    data = {
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.dump(
+            data, f, allow_unicode=True, default_flow_style=False, sort_keys=False
+        )
+
+def save_config(config: Config, config_path: Path) -> None:
+    """設定をファイルに保存する
+
+    Args:
+        config: 設定オブジェクト
+        config_path: 保存先パス
+    """
+    data = _serialize_config(config)
+
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.dump(
+            data, f, allow_unicode=True, default_flow_style=False, sort_keys=False
+        )
+
+
+def _serialize_config(config: Config) -> dict:
+    """設定をYAML用の辞書に変換する"""
+    return {
         "audio": {
             "sample_rate": config.audio.sample_rate,
             "channels": config.audio.channels,
@@ -246,10 +271,8 @@ def save_default_config(config_path: Path) -> None:
         },
         "output": {
             "out_dir": config.output.out_dir,
-            "formats": {
-                "transcript": config.output.formats_transcript,
-                "summary": config.output.formats_summary,
-            },
+            "formats_transcript": config.output.formats_transcript,
+            "formats_summary": config.output.formats_summary,
             "naming": config.output.naming,
             "meta_footer": config.output.meta_footer,
         },
@@ -259,9 +282,3 @@ def save_default_config(config_path: Path) -> None:
             "faster_whisper_debug": config.logging.faster_whisper_debug,
         },
     }
-
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(config_path, "w", encoding="utf-8") as f:
-        yaml.dump(
-            data, f, allow_unicode=True, default_flow_style=False, sort_keys=False
-        )

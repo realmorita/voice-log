@@ -12,12 +12,16 @@ from voice_log.audio_io import (
     list_audio_devices,
     record_with_enter_control,
 )
-from voice_log.config import Config, load_config, save_default_config
+from voice_log.config import Config, load_config, save_config, save_default_config
 from voice_log.diagnostics import run_diagnostics
 from voice_log.logger import setup_logging, get_logger
 from voice_log.output import OutputManager
 from voice_log.prompts import PromptManager
-from voice_log.summarize import SummaryEngine
+from voice_log.summarize import (
+    SummaryEngine,
+    check_ollama_connection,
+    list_ollama_models,
+)
 from voice_log.transcribe import TranscriptionEngine
 from voice_log import ui
 
@@ -248,8 +252,42 @@ def handle_list_prompt_modes() -> None:
     ui.show_prompt_modes(modes)
 
 
+def handle_select_summary_model(config: Config) -> None:
+    """[6] 要約モデル選択"""
+    if not config.llm.enabled:
+        ui.show_error("LLM機能が無効化されています")
+        return
+
+    ok, message = check_ollama_connection(config.llm.base_url)
+    if not ok:
+        ui.show_error(message)
+        return
+
+    try:
+        models = [model["id"] for model in list_ollama_models(config.llm.base_url)]
+    except Exception as e:
+        ui.show_error(f"モデル一覧の取得に失敗しました: {e}")
+        return
+    if not models:
+        ui.show_warning("利用可能なモデルがありません")
+        return
+
+    selected_model = ui.ask_summary_model(models, config.llm.model)
+    if selected_model is None:
+        ui.show_info("キャンセルしました")
+        return
+
+    if selected_model == config.llm.model:
+        ui.show_info("モデルは変更されていません")
+        return
+
+    config.llm.model = selected_model
+    save_config(config, DEFAULT_CONFIG_PATH)
+    ui.show_success(f"要約モデルを更新しました: {selected_model}")
+
+
 def handle_init_config() -> None:
-    """[6] 設定初期化"""
+    """[7] 設定初期化"""
     if DEFAULT_CONFIG_PATH.exists():
         confirm = ui.ask_input(
             f"{DEFAULT_CONFIG_PATH} は既に存在します。上書きしますか? (y/n)",
@@ -264,7 +302,7 @@ def handle_init_config() -> None:
 
 
 def handle_reload_config() -> tuple[Config, bool]:
-    """[7] 設定再読み込み"""
+    """[8] 設定再読み込み"""
     if not DEFAULT_CONFIG_PATH.exists():
         ui.show_error(f"設定ファイルがありません: {DEFAULT_CONFIG_PATH}")
         return get_config(), False
@@ -318,8 +356,10 @@ def main() -> None:
             elif choice == "5":
                 handle_list_prompt_modes()
             elif choice == "6":
-                handle_init_config()
+                handle_select_summary_model(config)
             elif choice == "7":
+                handle_init_config()
+            elif choice == "8":
                 config, _ = handle_reload_config()
             else:
                 ui.show_error("無効な選択です")
