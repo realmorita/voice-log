@@ -74,3 +74,44 @@ def get_logger(name: str | None = None) -> logging.Logger:
     if name:
         return logging.getLogger(f"voice_log.{name}")
     return logging.getLogger("voice_log")
+
+
+def log_to_file_only(
+    logger: logging.Logger,
+    level: int,
+    message: str,
+    *args: object,
+) -> None:
+    """ログファイルのみに出力する
+
+    Args:
+        logger: ロガー
+        level: ログレベル
+        message: メッセージ
+        *args: フォーマット引数
+    """
+    root_logger = logging.getLogger("voice_log")
+    if not root_logger.isEnabledFor(level):
+        return
+
+    file_handlers = [
+        handler
+        for handler in root_logger.handlers
+        if isinstance(handler, logging.FileHandler)
+    ]
+    if not file_handlers:
+        logger.log(level, message, *args)
+        return
+
+    record = root_logger.makeRecord(
+        name=logger.name,
+        level=level,
+        fn="",
+        lno=0,
+        msg=message,
+        args=args,
+        exc_info=None,
+    )
+    for handler in file_handlers:
+        if level >= handler.level:
+            handler.handle(record)

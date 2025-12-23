@@ -3,6 +3,7 @@
 Ollama（OpenAI互換API）経由でローカルLLMによる要約を行う。
 """
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -10,10 +11,69 @@ from typing import Any
 from openai import APIConnectionError, APITimeoutError, OpenAI
 
 from voice_log.config import LlmConfig
-from voice_log.logger import get_logger
+from voice_log.logger import get_logger, log_to_file_only
 from voice_log.prompts import PromptManager
 
 logger = get_logger("summarize")
+
+
+def replace_surrogate_codepoints(
+    text: str,
+    replacement: str = "\uFFFD",
+) -> tuple[str, list[tuple[int, int]]]:
+    """サロゲート文字を置換し、位置とコードポイントを返す
+
+    Args:
+        text: 対象文字列
+        replacement: 置換文字
+
+    Returns:
+        tuple[str, list[tuple[int, int]]]: 置換後文字列と(位置,コードポイント)一覧
+    """
+    if text == "":
+        return text, []
+
+    occurrences: list[tuple[int, int]] = []
+    replaced_characters: list[str] = []
+
+    for index, character in enumerate(text):
+        codepoint = ord(character)
+        if 0xD800 <= codepoint <= 0xDFFF:
+            occurrences.append((index, codepoint))
+            replaced_characters.append(replacement)
+        else:
+            replaced_characters.append(character)
+
+    if not occurrences:
+        return text, []
+
+    return "".join(replaced_characters), occurrences
+
+
+def format_surrogate_codepoints(
+    occurrences: list[tuple[int, int]],
+    max_items: int = 5,
+) -> str:
+    """サロゲート文字の概要をログ向けに整形する
+
+    Args:
+        occurrences: (位置,コードポイント)一覧
+        max_items: 表示する最大件数
+
+    Returns:
+        str: 概要文字列
+    """
+    if not occurrences:
+        return "count=0"
+
+    limited = occurrences[:max_items]
+    position_items = ", ".join(
+        f"{index}:{codepoint:04X}" for index, codepoint in limited
+    )
+    remaining = len(occurrences) - len(limited)
+    suffix = "" if remaining <= 0 else f", ... +{remaining}"
+
+    return f"count={len(occurrences)}, positions={position_items}{suffix}"
 
 
 @dataclass
@@ -132,13 +192,42 @@ class SummaryEngine:
         """
         mode = prompt_mode or self.config.prompt_mode
 
+        sanitized_transcript, transcript_surrogates = replace_surrogate_codepoints(
+            transcript
+        )
+        if transcript_surrogates:
+            log_to_file_only(
+                logger,
+                logging.INFO,
+                "文字起こしテキストのサロゲート文字を検出して置換: %s, replacement=U+FFFD",
+                format_surrogate_codepoints(transcript_surrogates),
+            )
+
+        sanitized_title, title_surrogates = replace_surrogate_codepoints(title)
+        if title_surrogates:
+            log_to_file_only(
+                logger,
+                logging.INFO,
+                "タイトルのサロゲート文字を検出して置換: %s, replacement=U+FFFD",
+                format_surrogate_codepoints(title_surrogates),
+            )
+
+        sanitized_date, date_surrogates = replace_surrogate_codepoints(date)
+        if date_surrogates:
+            log_to_file_only(
+                logger,
+                logging.INFO,
+                "日付のサロゲート文字を検出して置換: %s, replacement=U+FFFD",
+                format_surrogate_codepoints(date_surrogates),
+            )
+
         try:
             # プロンプトをレンダリング
             prompt = self.prompt_manager.render(
                 mode=mode,
-                transcript=transcript,
-                title=title,
-                date=date,
+                transcript=sanitized_transcript,
+                title=sanitized_title,
+                date=sanitized_date,
             )
         except FileNotFoundError as e:
             logger.error(f"プロンプトファイルが見つかりません: {e}")
@@ -148,6 +237,16 @@ class SummaryEngine:
                 error=str(e),
                 model=self.config.model,
             )
+
+        sanitized_prompt, prompt_surrogates = replace_surrogate_codepoints(prompt)
+        if prompt_surrogates:
+            log_to_file_only(
+                logger,
+                logging.INFO,
+                "要約プロンプトのサロゲート文字を検出して置換: %s, replacement=U+FFFD",
+                format_surrogate_codepoints(prompt_surrogates),
+            )
+            prompt = sanitized_prompt
 
         logger.info(f"要約生成中: モデル={self.config.model}, モード={mode}")
 
