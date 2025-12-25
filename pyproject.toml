@@ -12,6 +12,7 @@ description = "ローカル音声文字起こし＋LLM要約ツール"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "ctranslate2",
     "faster-whisper>=1.2.1",
     "llvmlite>=0.46.0",
     "numba>=0.63.0",
@@ -41,6 +42,7 @@ explicit = true
 torch = { index = "pytorch-cu130" }
 torchaudio = { index = "pytorch-cu130" }
 torchcodec = { index = "pytorch-cu130" }
+ctranslate2 = { path = "../_build/CTranslate2/python/dist/ctranslate2-4.6.2-cp312-cp312-linux_aarch64.whl" }
 
 [tool.ruff]
 target-version = "py312"
