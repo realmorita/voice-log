@@ -1,0 +1,75 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/voice_log"]
+
+[project]
+name = "voice-log"
+version = "0.1.0"
+description = "ローカル音声文字起こし＋LLM要約ツール"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ctranslate2",
+    "faster-whisper>=1.2.1",
+    "llvmlite>=0.46.0",
+    "numba>=0.63.0",
+    "nvidia-cudnn-cu13>=9.13.0.50",
+    "openai>=2.14.0",
+    "pyyaml>=6.0.3",
+    "rich>=14.2.0",
+    "sounddevice>=0.5.3",
+    "soundfile>=0.13.1",
+    "stable-ts[fw]>=2.19.1",
+    "torch>=2.9.1",
+    "torchaudio>=2.9.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.10",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu130" }
+torchaudio = { index = "pytorch-cu130" }
+torchcodec = { index = "pytorch-cu130" }
+ctranslate2 = { path = "../_build/CTranslate2/python/dist/ctranslate2-4.6.2-cp312-cp312-linux_aarch64.whl" }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "UP",     # pyupgrade
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

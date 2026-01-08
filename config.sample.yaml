@@ -1,0 +1,65 @@
+# Voice Log 設定ファイル
+
+audio:
+  sample_rate: 16000
+  channels: 1
+  device_id: null
+  dtype: float32
+
+input:
+  tmp_dir: ".tmp"
+  accept_ext:
+    - wav
+    - mp3
+    - m4a
+    - flac
+
+vad:
+  enabled: true
+  min_silence_duration_ms: 500
+
+whisper:
+  model: "large-v3-turbo"
+  language: "ja"
+  device: "auto"
+  compute_type: "auto"
+  beam_size: 3
+  temperature: 0.0
+  condition_on_previous_text: false
+  word_timestamps_internal: false
+  batch_size: 0
+
+stable_ts:
+  enabled: true
+  suppress_silence: true
+  regroup: true
+
+hallucination:
+  enabled: true
+  max_consecutive_token_repeat: 8
+  max_consecutive_line_repeat: 3
+  ngram_size: 4
+  ngram_repeat_threshold: 6
+  action: "trim"
+
+llm:
+  enabled: true
+  provider: "openai_compatible"
+  base_url: "http://127.0.0.1:11434/v1"
+  model: "qwen2.5:14b"
+  temperature: 0.2
+  prompt_mode: "minutes"
+  timeout_sec: 600
+
+output:
+  out_dir: "outputs"
+  formats_transcript:
+    - srt
+  formats_summary:
+    - md
+  naming: "{date}_{time}_{stem}"
+
+logging:
+  level: "INFO"
+  file: "logs/app.log"
+  faster_whisper_debug: false
