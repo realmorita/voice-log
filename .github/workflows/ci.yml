@@ -42,7 +42,7 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --extra dev --no-sources
 
       - name: Run Ruff lint
         run: uv run ruff check src/ tests/
